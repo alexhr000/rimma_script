@@ -1,0 +1,279 @@
+div.header{
+  width: 100vw;
+}
+nav#toolbar-bar{
+  width: 100vw;
+}
+td > div > form > div > div > input {
+  width: auto !important;
+  max-width: 200px;
+}
+td > div > form > div > div > div > textarea {
+  width: auto !important;
+  max-width: 200px;
+  resize: none;
+  overflow: hidden;
+}
+td > div > form > div > div > label {
+  display: none;
+}
+td > div > form > div > div > label.form-check-label.option {
+  display: block;
+}
+td > div > form > div > div.js-form-type-entity-autocomplete{
+  padding: 10px 10px 10px !important;
+}
+td > div > div > form > div > div.js-form-item{
+  padding: 10px 10px 10px !important;
+}
+td > div > form > div > div.js-form-item{
+  padding-inline: 10px !important;
+}
+textarea{
+  height: 25px;
+}
+/* div.js-form-item.form-item.js-form-type-textarea.form-item-body-0-value.js-form-item-body-0-value.form-group{ */
+  /*height: 70px;*/
+/* } */
+td > div > form > div > div > label >input.checkbox-inline input[type="checkbox"], .checkbox input[type="checkbox"], .form-check input[type="checkbox"], .form-check input[type="radio"], .radio-inline input[type="radio"], .radio input[type="radio"] {
+  position: relative !important;
+  margin-left: 0px !important;
+  margin-top: 0px !important;
+}
+.sticky-header{
+  top:187px !important;
+}
+
+td>div>form>div>div.form-item.js-form-type-textfield {
+  padding-top: 1px;
+  padding-bottom: 0px;
+}
+
+
+td>div>form>div>div.form-item {
+  margin-bottom: 0px !important;
+}
+td>div>form>div>div>div.form-item {
+  margin-bottom: 0px !important;
+}
+
+td>div>form>div>div>div>button > div.filter-option:first-child {
+  display: flex;
+  justify-content: center;
+  justify-items: center;
+  padding: 5% 0px 0px 0px !important;
+
+}
+
+td>div>form>div>div>div>button > div.filter-option{
+  width: max-content !important;
+}
+
+div.dropdown.bootstrap-select.form-select.custom-select{
+  min-width: max-content !important;
+}
+
+td>div>form>div>div>div>button {
+  padding: 7% 10% !important;
+  overflow: hidden;
+}
+
+td>div>form>div>div>input[type="text"].js-text-full.text-full.form-control{
+  width:100px !important;
+  padding-block:8px;
+  padding-top: 10px;
+}
+
+td>duv>div>form>div>div.js-form-item.js-form-type-textarea.form-group{
+ margin-bottom: 0px !important;
+}
+
+td>div>div>form>div>div.js-form-item.form-item.js-form-type-textarea{
+  margin: 0px;
+}
+
+td > div > form > div > div.js-form-item.js-form-type-number{
+  padding:3px !important;
+}
+
+td > div > form > div > div.js-form-item.js-text-format-wrapper
+{
+  padding:3px !important;
+}
+
+th{
+  background: #fff;
+}
+table{
+  border-collapse: separate !important;
+  border-spacing: 0px;
+}
+
+thead tr {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+}
+.tableContainer {
+  position: relative;
+  overflow: auto;
+  height: 80vh;
+}
+.sticky-header{
+  display: none !important;
+}
+td.views-field-nid, th.views-field-nid{
+  position: sticky;
+  top: 0;
+  left: 0px;
+  z-index: 999;
+  background: white;
+}
+td.views-field-field-serial,th.views-field-field-serial{
+  position: sticky;
+  top: 0;
+  left: 43px;
+  z-index: 999;
+  background: white;
+}
+
+td.views-field-body,th.views-field-body{
+  position: sticky;
+  top: 0;
+  left: 98px;
+  z-index: 999;
+  background: white;
+}
+
+
+@media only screen and (max-width: 900px) {
+  div.header.sticky{
+    display:none !important;
+  }
+
+}
+@media (max-width: 768px) and (max-height: 950px) { 
+  td > div > form > div > div > div > textarea{ 
+    width: auto !important;
+    max-width: 50px !important;  
+    resize: none;
+    overflow: hidden;
+    left: 57px !important;
+  }
+}
+
+/* @media (max-width: 768px) and (max-height: 950px){ */
+ /* #mm-0 > div:nth-child(2) > main > div:nth-child(1) > div > div > div > div:nth-child(3) > div > div > table:nth-child(2) > tbody > tr:nth-child(1) > td:nth-child(1){ */
+ /* //   display: none !important; */
+  /* } */
+/* } */
+
+@media (max-width: 768px) and (max-height: 950px) {
+  .views-field.views-field-field-serial {
+    font-size: 10px !important; 
+    padding-left: 3px !important;
+    padding-right: 3px !important;
+    left: 22px; 
+   }
+}
+
+@media (max-width: 768px) and (max-height: 950px) {
+  .views-field.views-field-nid {
+    font-size: 10px !important;
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+  }
+}
+
+@media (max-width: 768px) and (max-height: 950px) {
+  .views-field.views-field-body{
+   padding-left: 3px !important;
+   font-size: 10px !important;
+   padding-right: 3px !important; 
+   left: 48px !important;
+  }
+}
+
+@media (max-width: 768px) and (max-height: 950px){ 
+  .js-form-item.form-item.js-form-type-textarea.form-item-body-0-value.js-form-item-body-0-value.form-group{ 
+    font-size: 6px !important;
+    padding-left: 2px !important;
+    padding-right: 2px !important;
+    padding-top: 2 px !important;
+  }
+}
+
+@media (max-width: 768px)  and (max-height: 950px){ 
+  .js-form-item.form-item.js-form-type-textarea.form-item-body-0-value.js-form-item-body-0-value.form-group {
+    font-size: 6px !important; 
+    padding-top: 0px !important;
+  }
+}
+
+
+
+@media (max-width: 768px)  and (max-height: 950px){
+  .views-field{
+    font-size: 8px !important;
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+  }
+}
+
+@media (max-width: 768px)  and (max-height: 950px){
+   .form-control{
+ 	font-size: 8px !important;
+	padding: 0px !important;
+
+  }
+	.container-fluid{
+	padding-left:0px !important;
+	padding-right:0px !important;
+}
+	.btn-default{
+	padding: 5px !important;
+	font-size: 8px !important;
+	max-width: 100px !important;
+}
+	.custom-select{
+	max-height: 20px !important;
+}
+td > div > form > div > div.js-form-type-entity-autocomplete{ padding: 0px !important;
+}
+
+
+}
+td > div > div > form > div > div.js-form-item{ padding: 0px !important;
+}
+td > div > form > div > div.js-form-item{ padding-inline: 0px !important;
+}
+
+	.views-field{
+	text-align: center;
+}
+
+td>div>form>div>div>input[type="text"].js-text-full.text-full.form-control{ max-width:50px !important; 
+  padding-block:8px; padding-top: 10px;
+}
+
+.table td, .table th {
+    padding: .5rem;
+    vertical-align: top;
+    
+}
+
+td > div > form > div > div > input {
+    width: auto !important;
+    max-width: 80px;
+}
+
+
+.form-item {
+    padding-top: 5px !important;
+
+}
+
+
+
+

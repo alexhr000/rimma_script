@@ -1,0 +1,12 @@
+[
+    {
+        "entity_id": "3731",
+        "body_value": "Тест уведомлений повторять каждую минуту",
+        "building_result": "Левкова 20А",
+        "floor_result": "Цоколь",
+        "field_place_value": "тест",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 17:04:22",
+        "daily_time": "2025-01-30 17:05:22"
+    }
+]

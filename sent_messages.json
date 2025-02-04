@@ -1,0 +1,22 @@
+[
+    {
+        "entity_id": "3727",
+        "body_value": "Тест повторяющихся задач и уведомлений повторять каждую минуту",
+        "building_result": "Могилевская 12А",
+        "floor_result": "Фасад",
+        "field_place_value": "фасад",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 01:31:22",
+        "daily_time": "2025-01-30 01:32:22"
+    },
+    {
+        "entity_id": "3724",
+        "body_value": "Тест повторять каждую минуту",
+        "building_result": "Антоновская 28А",
+        "floor_result": "-1",
+        "field_place_value": "Кабинет",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 01:31:22",
+        "daily_time": "2025-01-30 01:32:22"
+    }
+]

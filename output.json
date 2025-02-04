@@ -1,0 +1,202 @@
+[
+    {
+        "entity_id": "3731",
+        "body_value": "Тест уведомлений повторять каждую минуту",
+        "building_result": "Левкова 20А",
+        "floor_result": "Цоколь",
+        "field_place_value": "тест",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 17:04:22",
+        "daily_time": "2025-01-30 17:05:22"
+    },
+    {
+        "entity_id": "3730",
+        "body_value": "течет бачок",
+        "building_result": "Смоленская 25",
+        "floor_result": "7",
+        "field_place_value": "Женский туалет",
+        "field_done_value": 0,
+        "timestamp": "2025-01-30 17:04:22",
+        "daily_time": null
+    },
+    {
+        "entity_id": "3729",
+        "body_value": "Навести порядок после сварных работ",
+        "building_result": "Антоновская 14Б",
+        "floor_result": "-1",
+        "field_place_value": "Теплоузел",
+        "field_done_value": 0,
+        "timestamp": "2025-01-30 17:04:22",
+        "daily_time": null
+    },
+    {
+        "entity_id": "3728",
+        "body_value": "заменить лампу",
+        "building_result": "Смоленская 27 к.1",
+        "floor_result": "4",
+        "field_place_value": "Женский туалет",
+        "field_done_value": 0,
+        "timestamp": "2025-01-30 17:04:23",
+        "daily_time": null
+    },
+    {
+        "entity_id": "3726",
+        "body_value": "Скрипит дверь и у замка неисправна ручка.",
+        "building_result": "Партизанский 6А",
+        "floor_result": "5",
+        "field_place_value": "506",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 17:04:23",
+        "daily_time": null
+    },
+    {
+        "entity_id": "3725",
+        "body_value": "Поправить жалюзи в женском туалете. оторвались.",
+        "building_result": "Смоленская 27 к.2",
+        "floor_result": "1",
+        "field_place_value": "",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 17:04:23",
+        "daily_time": null
+    },
+    {
+        "entity_id": "3723",
+        "body_value": "На этаже пропал свет.",
+        "building_result": "Смоленская 25",
+        "floor_result": "8",
+        "field_place_value": "",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 17:04:23",
+        "daily_time": null
+    },
+    {
+        "entity_id": "3722",
+        "body_value": "В кабинете 804 не греют батареи.",
+        "building_result": "Партизанский 6А",
+        "floor_result": "8",
+        "field_place_value": "",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 17:04:23",
+        "daily_time": null
+    },
+    {
+        "entity_id": "3721",
+        "body_value": "\"Поджать\"  дверную ручку",
+        "building_result": "Антоновская 28А",
+        "floor_result": "1",
+        "field_place_value": "Мужской с/у",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 17:04:23",
+        "daily_time": null
+    },
+    {
+        "entity_id": "3720",
+        "body_value": "Установка водомерного узла",
+        "building_result": "Смоленская 25",
+        "floor_result": "1",
+        "field_place_value": "Водомер",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 17:04:24",
+        "daily_time": null
+    },
+    {
+        "entity_id": "3719",
+        "body_value": "не работают камеры",
+        "building_result": "Смоленская 25",
+        "floor_result": "Фасад",
+        "field_place_value": "андреевская 4а",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 17:04:24",
+        "daily_time": null
+    },
+    {
+        "entity_id": "3718",
+        "body_value": "не работает выключатель света лифтовой хол",
+        "building_result": "Смоленская 25",
+        "floor_result": "1",
+        "field_place_value": "хол",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 17:04:24",
+        "daily_time": null
+    },
+    {
+        "entity_id": "3717",
+        "body_value": "Заменить сердцевины в двух дверях, внутри помещения",
+        "building_result": "Партизанский 6А",
+        "floor_result": "10",
+        "field_place_value": "каб. 1001",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 17:04:24",
+        "daily_time": null
+    },
+    {
+        "entity_id": "3716",
+        "body_value": "забит умывальник",
+        "building_result": "Смоленская 27 к.1",
+        "floor_result": "3",
+        "field_place_value": "Женский туалет",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 17:04:24",
+        "daily_time": null
+    },
+    {
+        "entity_id": "3715",
+        "body_value": "Закрепить национальный флаг РБ на фасаде здания. Флаг и древко на вахте на смоленской 25.",
+        "building_result": "Смоленская 27 к.1",
+        "floor_result": "Фасад",
+        "field_place_value": "",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 17:04:24",
+        "daily_time": null
+    },
+    {
+        "entity_id": "3714",
+        "body_value": "Не горит светильник в лифтовом холле",
+        "building_result": "Смоленская 25",
+        "floor_result": "3",
+        "field_place_value": "",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 17:04:25",
+        "daily_time": null
+    },
+    {
+        "entity_id": "3713",
+        "body_value": "на 30.012025 перенести светильник  и розетки",
+        "building_result": "Смоленская 27 к.2",
+        "floor_result": "2",
+        "field_place_value": "Каб.224",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 17:04:25",
+        "daily_time": null
+    },
+    {
+        "entity_id": "3712",
+        "body_value": "перегорела лампочка",
+        "building_result": "Машерова 78",
+        "floor_result": "1",
+        "field_place_value": "Фойе, главный вход",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 17:04:25",
+        "daily_time": null
+    },
+    {
+        "entity_id": "3711",
+        "body_value": "перегорела лампочка",
+        "building_result": "Смоленская 25",
+        "floor_result": "1",
+        "field_place_value": "Фойе, главный вход",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 17:04:25",
+        "daily_time": null
+    },
+    {
+        "entity_id": "3710",
+        "body_value": "не греет баторея",
+        "building_result": "Смоленская 25",
+        "floor_result": "1",
+        "field_place_value": "комната администратора",
+        "field_done_value": 1,
+        "timestamp": "2025-01-30 17:04:25",
+        "daily_time": null
+    }
+]

@@ -1,0 +1,142 @@
+td > div > form > div > div > input {
+  width: auto !important;
+  max-width: 200px;
+}
+td > div > form > div > div > div > textarea {
+  width: auto !important;
+  max-width: 200px;
+  resize: none;
+  overflow: hidden;
+}
+td > div > form > div > div > label {
+  display: none;
+}
+td > div > form > div > div > label.form-check-label.option {
+  display: block;
+}
+td > div > form > div > div.js-form-type-entity-autocomplete{
+  padding: 10px 10px 10px !important;
+}
+td > div > div > form > div > div.js-form-item{
+  padding: 10px 10px 10px !important;
+}
+td > div > form > div > div.js-form-item{
+  padding-inline: 10px !important;
+}
+textarea{
+  height: 25px;
+}
+div.js-form-item.form-item.js-form-type-textarea.form-item-body-0-value.js-form-item-body-0-value.form-group{
+  /*height: 70px;*/
+}
+td > div > form > div > div > label >input.checkbox-inline input[type="checkbox"], .checkbox input[type="checkbox"], .form-check input[type="checkbox"], .form-check input[type="radio"], .radio-inline input[type="radio"], .radio input[type="radio"] {
+  position: relative !important;
+  margin-left: 0px !important;
+  margin-top: 0px !important;
+}
+.sticky-header{
+  top:187px !important;
+}
+
+td>div>form>div>div.form-item.js-form-type-textfield {
+  padding-top: 1px;
+  padding-bottom: 0px;
+}
+
+
+td>div>form>div>div.form-item {
+  margin-bottom: 0px !important;
+}
+td>div>form>div>div>div.form-item {
+  margin-bottom: 0px !important;
+}
+
+td>div>form>div>div>div>button > div.filter-option:first-child {
+  display: flex;
+  justify-content: center;
+  justify-items: center;
+  padding: 5% 0px 0px 0px !important;
+
+}
+
+td>div>form>div>div>div>button > div.filter-option{
+  width: max-content !important;
+}
+
+div.dropdown.bootstrap-select.form-select.custom-select{
+  min-width: max-content !important;
+}
+
+td>div>form>div>div>div>button {
+  padding: 7% 10% !important;
+  overflow: hidden;
+}
+
+td>div>form>div>div>input[type="text"].js-text-full.text-full.form-control{
+  width:100px !important;
+  padding-block:8px;
+  padding-top: 10px;
+}
+
+td>duv>div>form>div>div.js-form-item.js-form-type-textarea.form-group{
+ margin-bottom: 0px !important;
+}
+
+td>div>div>form>div>div.js-form-item.form-item.js-form-type-textarea{
+  margin: 0px;
+}
+
+td > div > form > div > div.js-form-item.js-form-type-number{
+  padding:3px !important;
+}
+
+td > div > form > div > div.js-form-item.js-text-format-wrapper
+{
+  padding:3px !important;
+}
+
+th{
+  background: #fff;
+}
+table{
+  border-collapse: separate !important;
+  border-spacing: 0px;
+}
+
+thead tr {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+}
+.tableContainer {
+  overflow: auto;
+  height: 80vh;
+}
+td.views-field-nid, th.views-field-nid{
+  position: sticky;
+  top: 0;
+  left: 0px;
+  z-index: 999;
+  background: white;
+}
+td.views-field-field-serial,th.views-field-field-serial{
+  position: sticky;
+  top: 0;
+  left: 43px;
+  z-index: 999;
+  background: white;
+}
+
+td.views-field-body,th.views-field-body{
+  position: sticky;
+  top: 0;
+  left: 98px;
+  z-index: 999;
+  background: white;
+}
+
+
+
+
+
