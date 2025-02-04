@@ -11,21 +11,21 @@ from selenium.webdriver.chrome.options import Options
 def add_task(body_value,field_place_value, floor_result, building_result,logger):
     try:
         options = Options()
-        options.binary_location = "/usr/bin/chromium-browser"  # Путь к Chromium
-        options.add_argument("--headless")  # Запуск без GUI
+        options.binary_location = "/usr/bin/chromium-browser"  
+        options.add_argument("--headless")  
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         proxy = "gw.dataimpulse.com:823"
 
         # options.add_argument(f"--proxy-server={proxy}")
-        service = Service("/usr/bin/chromedriver")  # Путь к ChromeDriver
+        service = Service("/usr/bin/chromedriver")  
         driver = webdriver.Chrome(service=service, options=options)
 
         logger.info('пытаюсь зайти на сайт, что бы отправить новую заявку')
-        # Открытие страницы
+
         driver.get('https://engir.by/user/login')
         logger.info('зашел на сайт, что бы отправить новую заявку')
-        # Ожидание загрузки страницы
+
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "edit-submit")))
 
         email_field = driver.find_element(By.ID, 'edit-name')
@@ -37,7 +37,6 @@ def add_task(body_value,field_place_value, floor_result, building_result,logger)
         submit_button = driver.find_element(By.ID, 'edit-submit')
         submit_button.click()
 
-        # Ожидание выполнения
         time.sleep(5)
         driver.get('https://engir.by/apply')
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "edit-submit")))
