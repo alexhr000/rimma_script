@@ -2,7 +2,6 @@ import os
 from urllib.parse import urlparse
 
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
@@ -179,28 +178,36 @@ def login(driver, logger):
 
     email_field = driver.find_element(By.ID, "edit-name")
     password_field = driver.find_element(By.ID, "edit-pass")
-    email_field.send_keys(Keys.CONTROL, "a")
-    email_field.send_keys(Keys.BACKSPACE)
-    password_field.send_keys(Keys.CONTROL, "a")
-    password_field.send_keys(Keys.BACKSPACE)
+    driver.execute_script(
+        "arguments[0].value=''; arguments[1].value='';",
+        email_field,
+        password_field,
+    )
     email_field.send_keys(config["login"])
     password_field.send_keys(config["password"])
 
     _unlock_antibot(driver, logger)
+
+    name_len = len(email_field.get_attribute("value") or "")
+    pass_len = len(password_field.get_attribute("value") or "")
+    logger.info(f"поля перед submit: login_len={name_len}, pass_len={pass_len}")
 
     driver.find_element(By.ID, "edit-submit").click()
 
     def login_finished(d):
         if "/user/login" not in d.current_url:
             return True
-        if d.find_elements(By.CSS_SELECTOR, ".messages--error, .messages--status, .alert-danger, .messages"):
-            return True
+        # только непустые сообщения — пустые .messages в вёрстке ломают wait
+        for sel in (".messages--error", ".messages--status", ".alert-danger"):
+            for el in d.find_elements(By.CSS_SELECTOR, sel):
+                if el.is_displayed() and el.text.strip():
+                    return True
         return False
 
     try:
-        WebDriverWait(driver, 20).until(login_finished)
+        WebDriverWait(driver, 25).until(login_finished)
     except Exception:
-        pass
+        logger.warning("timeout ожидания редиректа после логина")
 
     time_url = driver.current_url
     title = driver.title or ""
