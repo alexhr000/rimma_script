@@ -13,6 +13,7 @@ from logger import setup_logger,send_to_telegram
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+from auth import create_chrome_driver, login as site_login
 
 
 def calculate_next_occurrence(body_value):
@@ -149,42 +150,27 @@ def parse_eam_table(driver, logger):
 def check_task_list(logger):
     driver = None
     try:
-        options = Options()
-        options.binary_location = "/usr/bin/chromium-browser"  # Путь к Chromium
-        options.add_argument("--headless")  # Запуск без GUI
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--window-size=1920,1080")
-        proxy = "gw.dataimpulse.com:823"
+        driver = create_chrome_driver()
+        config = site_login(driver, logger)
+        base_url = config["base_url"]
 
-        # options.add_argument(f"--proxy-server={proxy}")
-        service = Service("/usr/bin/chromedriver")  # Путь к ChromeDriver
-        driver = webdriver.Chrome(service=service, options=options)
-
-        logger.info('пытаюсь зайти на сайт')
-    
-        driver.get('https://engir.by/user/login')
-        logger.info('зашел на сайт')
-
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "edit-submit")))
-
-        email_field = driver.find_element(By.ID, 'edit-name')
-        email_field.send_keys('help@wbx.by')
-
-        password_field = driver.find_element(By.ID, 'edit-pass')
-        password_field.send_keys('4?Zm9y!U/c-2_6yv')
-
-        submit_button = driver.find_element(By.ID, 'edit-submit')
-        submit_button.click()
-
-        time.sleep(5)
-        # items_per_page=100 — на сайте по умолчанию сейчас 20
+        # сначала 20 строк — страница EAM очень тяжёлая
         eam_url = (
-            'https://engir.by/eam?building=&applicant=&realwork=&run_eam=All'
-            '&done_eam=All&created=&changed=&items_per_page=100'
+            f'{base_url}/eam?building=&applicant=&realwork=&run_eam=All'
+            f'&done_eam=All&created=&changed=&items_per_page=20'
         )
-        driver.get(eam_url)
-        logger.info(f'зашел в eam ({driver.current_url})')
+        logger.info(f'открываю eam: {eam_url}')
+        try:
+            driver.get(eam_url)
+        except Exception as e:
+            logger.warning(f"timeout/ошибка загрузки eam ({e}), продолжаем с тем что успело загрузиться")
+        logger.info(f'зашел в eam ({driver.current_url}, title={driver.title!r})')
+
+        if "запрещ" in (driver.title or "").lower() or "access denied" in (driver.title or "").lower():
+            raise RuntimeError(
+                f"Нет доступа к EAM после логина: url={driver.current_url}, title={driver.title!r}. "
+                f"Проверь LOGIN/PASSWORD в .env (аккаунт {config['login']})."
+            )
 
         try:
             WebDriverWait(driver, 20).until(
@@ -196,14 +182,18 @@ def check_task_list(logger):
                 )
             )
         except Exception:
-            # fallback на простой /eam
             logger.warning(
                 f"Таблица не появилась на фильтрованном URL "
                 f"(url={driver.current_url}, title={driver.title!r}), пробую /eam"
             )
-            driver.get('https://engir.by/eam')
+            driver.get(f'{base_url}/eam')
             time.sleep(5)
             logger.info(f'повторный вход в eam ({driver.current_url}, title={driver.title!r})')
+            if "запрещ" in (driver.title or "").lower():
+                raise RuntimeError(
+                    f"Нет доступа к /eam: title={driver.title!r}. "
+                    f"Проверь права пользователя {config['login']}."
+                )
 
         time.sleep(2)
 
@@ -280,12 +270,9 @@ def check_task_list(logger):
 #         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "edit-submit")))
 
 #         email_field = driver.find_element(By.ID, 'edit-name')
-#         email_field.send_keys('help@wbx.by')
-#         # email_field.send_keys('admin@example.com')
-
+#         email_field.send_keys(LOGIN_FROM_ENV)
 #         password_field = driver.find_element(By.ID, 'edit-pass')
-#         password_field.send_keys('4?Zm9y!U/c-2_6yv')
-#         # password_field.send_keys('FDBfhsbfjBBFE213bbuYFG2')
+#         password_field.send_keys(PASSWORD_FROM_ENV)
 
 #         submit_button = driver.find_element(By.ID, 'edit-submit')
 #         submit_button.click()

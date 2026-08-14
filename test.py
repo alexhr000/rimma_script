@@ -163,10 +163,10 @@ try:
         time.sleep(5)
 
         email_field = driver.find_element(By.ID, 'edit-name')
-        email_field.send_keys('help@wbx.by')
+        email_field.send_keys(os.environ.get("LOGIN", ""))
 
         password_field = driver.find_element(By.ID, 'edit-pass')
-        password_field.send_keys('4?Zm9y!U/c-2_6yv')
+        password_field.send_keys(os.environ.get("PASSWORD", ""))
 
         submit_button = driver.find_element(By.ID, 'edit-submit')
         submit_button.click()

@@ -2,43 +2,20 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 import time
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
+from auth import create_chrome_driver, login as site_login
 
 
 
 def add_task(body_value,field_place_value, floor_result, building_result,logger):
+    driver = None
     try:
-        options = Options()
-        options.binary_location = "/usr/bin/chromium-browser"  
-        options.add_argument("--headless")  
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        proxy = "gw.dataimpulse.com:823"
+        driver = create_chrome_driver()
+        config = site_login(driver, logger)
+        base_url = config["base_url"]
 
-        # options.add_argument(f"--proxy-server={proxy}")
-        service = Service("/usr/bin/chromedriver")  
-        driver = webdriver.Chrome(service=service, options=options)
+        logger.info('пытаюсь открыть форму заявки')
 
-        logger.info('пытаюсь зайти на сайт, что бы отправить новую заявку')
-
-        driver.get('https://engir.by/user/login')
-        logger.info('зашел на сайт, что бы отправить новую заявку')
-
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "edit-submit")))
-
-        email_field = driver.find_element(By.ID, 'edit-name')
-        email_field.send_keys('help@wbx.by')
-
-        password_field = driver.find_element(By.ID, 'edit-pass')
-        password_field.send_keys('4?Zm9y!U/c-2_6yv')
-
-        submit_button = driver.find_element(By.ID, 'edit-submit')
-        submit_button.click()
-
-        time.sleep(5)
-        driver.get('https://engir.by/apply')
+        driver.get(f'{base_url}/apply')
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "edit-submit")))
 
         time.sleep(3)
@@ -133,7 +110,7 @@ def add_task(body_value,field_place_value, floor_result, building_result,logger)
     except Exception as e:
         logger.info(f"Ошибка: {e}")
     finally:
-        if driver:
+        if driver is not None:
             driver.quit()
         else:
             logger.info("Драйвер не был инициализирован.")
