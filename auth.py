@@ -167,6 +167,53 @@ def _unlock_antibot(driver, logger):
     return info
 
 
+def _wait_login_result(driver, timeout=20):
+    def login_finished(d):
+        if "/user/login" not in d.current_url:
+            return True
+        for sel in (".messages--error", ".messages--status", ".alert-danger"):
+            for el in d.find_elements(By.CSS_SELECTOR, sel):
+                if el.is_displayed() and el.text.strip():
+                    return True
+        return False
+
+    try:
+        WebDriverWait(driver, timeout).until(login_finished)
+        return True
+    except Exception:
+        return False
+
+
+def _submit_login_form(driver, logger):
+    """Несколько способов отправки — на серверном headless click иногда молчит."""
+    form = driver.find_element(By.ID, "user-login-form")
+    submit = driver.find_element(By.ID, "edit-submit")
+    password_field = driver.find_element(By.ID, "edit-pass")
+
+    attempts = [
+        ("click", lambda: submit.click()),
+        ("requestSubmit", lambda: driver.execute_script(
+            "arguments[0].requestSubmit(arguments[1]);", form, submit
+        )),
+        ("ENTER", lambda: password_field.send_keys("\n")),
+    ]
+
+    for name, action in attempts:
+        if "/user/login" not in driver.current_url:
+            logger.info(f"уже ушли с login до попытки {name}")
+            return
+        logger.info(f"submit попытка: {name}")
+        try:
+            action()
+        except Exception as e:
+            logger.warning(f"submit {name} не удался: {e}")
+            continue
+        if _wait_login_result(driver, timeout=12):
+            logger.info(f"submit {name}: страница изменилась")
+            return
+        logger.warning(f"submit {name}: всё ещё на login")
+
+
 def login(driver, logger):
     """Логин в Drupal. Возвращает config. Бросает RuntimeError при неудаче."""
     config = get_site_config()
@@ -178,13 +225,22 @@ def login(driver, logger):
 
     email_field = driver.find_element(By.ID, "edit-name")
     password_field = driver.find_element(By.ID, "edit-pass")
+    # value + input/change events — надёжнее для Drupal на headless
     driver.execute_script(
-        "arguments[0].value=''; arguments[1].value='';",
+        """
+        const [email, pass, login, password] = arguments;
+        email.value = login;
+        pass.value = password;
+        for (const el of [email, pass]) {
+          el.dispatchEvent(new Event('input', {bubbles: true}));
+          el.dispatchEvent(new Event('change', {bubbles: true}));
+        }
+        """,
         email_field,
         password_field,
+        config["login"],
+        config["password"],
     )
-    email_field.send_keys(config["login"])
-    password_field.send_keys(config["password"])
 
     _unlock_antibot(driver, logger)
 
@@ -192,27 +248,12 @@ def login(driver, logger):
     pass_len = len(password_field.get_attribute("value") or "")
     logger.info(f"поля перед submit: login_len={name_len}, pass_len={pass_len}")
 
-    driver.find_element(By.ID, "edit-submit").click()
-
-    def login_finished(d):
-        if "/user/login" not in d.current_url:
-            return True
-        # только непустые сообщения — пустые .messages в вёрстке ломают wait
-        for sel in (".messages--error", ".messages--status", ".alert-danger"):
-            for el in d.find_elements(By.CSS_SELECTOR, sel):
-                if el.is_displayed() and el.text.strip():
-                    return True
-        return False
-
-    try:
-        WebDriverWait(driver, 25).until(login_finished)
-    except Exception:
-        logger.warning("timeout ожидания редиректа после логина")
+    _submit_login_form(driver, logger)
 
     time_url = driver.current_url
     title = driver.title or ""
     error_nodes = driver.find_elements(
-        By.CSS_SELECTOR, ".messages--error, .messages--status, .alert-danger, .messages"
+        By.CSS_SELECTOR, ".messages--error, .messages--status, .alert-danger"
     )
     error_text = " | ".join(e.text.strip() for e in error_nodes if e.text.strip())
     logger.info(f"после submit: url={time_url}, title={title!r}, messages={error_text!r}")
@@ -221,14 +262,17 @@ def login(driver, logger):
         "ошиб" in error_text.lower()
         or "неверн" in error_text.lower()
         or "invalid" in error_text.lower()
+        or "попыток" in error_text.lower()
+        or "flood" in error_text.lower()
     ):
         raise RuntimeError(f"Ошибка логина: {error_text}")
     if "/user/login" in time_url and not _is_logged_in(driver):
         hint = f" Сообщение сайта: {error_text}" if error_text else ""
         raise RuntimeError(
             f"Логин не выполнен, остались на {time_url}, title={title!r}.{hint} "
-            "После удаления Antibot очисти кэш Drupal: "
-            "/admin/config/development/performance → Clear all caches"
+            "Возможна блокировка Drupal Flood по IP сервера "
+            "(много неудачных попыток) — подожди или очисти таблицу flood. "
+            "Также Clear all caches на /admin/config/development/performance"
         )
     if "запрещ" in title.lower() or "access denied" in title.lower():
         raise RuntimeError(f"После логина доступ запрещён: url={time_url}, title={title!r}")
