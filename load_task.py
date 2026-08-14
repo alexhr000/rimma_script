@@ -30,129 +30,195 @@ def calculate_next_occurrence(body_value):
         return None
 
 
-def _item_fingerprint(item):
-    return (
-        (item.get("body_value") or "").strip().lower(),
-        (item.get("building_result") or "").strip().lower(),
-        (item.get("floor_result") or "").strip().lower(),
-        (item.get("field_place_value") or "").strip().lower(),
-    )
+def _get_place_value(place_el):
+    """Поддержка старых editable input и новых ячеек таблицы."""
+    tag = (place_el.tag_name or "").lower()
+    if tag == "input":
+        return (place_el.get_attribute("value") or "").strip()
+    nested = place_el.find_elements(By.CSS_SELECTOR, "input")
+    if nested:
+        return (nested[0].get_attribute("value") or "").strip()
+    return place_el.text.strip().split("\n")[-1]
 
 
-def _build_task_record(entity_id, body_value, building_result, floor_result, field_place_value, field_done_value):
-    body_value = (body_value or "").strip()
-    daily_time = calculate_next_occurrence(body_value)
-    if daily_time:
-        timestamp = datetime.now() + daily_time
-        daily_time = timestamp.strftime("%Y-%m-%d %H:%M:%S")
-    else:
-        daily_time = None
-
-    return {
-        "entity_id": (entity_id or "").strip(),
-        "body_value": body_value,
-        "building_result": (building_result or "").strip(),
-        "floor_result": (floor_result or "").strip(),
-        "field_place_value": (field_place_value or "").strip(),
-        "field_done_value": field_done_value,
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "daily_time": daily_time,
-    }
+def _get_done_value(done_el):
+    """Поддержка старого checkbox field_done и новой колонки Done (field_done_1)."""
+    tag = (done_el.tag_name or "").lower()
+    if tag == "input":
+        return 1 if done_el.is_selected() else 0
+    checkboxes = done_el.find_elements(By.CSS_SELECTOR, "input[type='checkbox']")
+    if checkboxes:
+        return 1 if checkboxes[0].is_selected() else 0
+    text = (done_el.text or "").strip().lower()
+    if text in ("1", "yes", "да", "done", "✓", "✔"):
+        return 1
+    if "checked" in (done_el.get_attribute("innerHTML") or "").lower():
+        return 1
+    return 0
 
 
-def parse_tasks_from_cards(driver):
-    """Новая вёрстка: карточки article.application."""
-    articles = driver.find_elements(By.CSS_SELECTOR, "article.node.application, article.application")
-    data = []
-    for article in articles:
-        try:
-            entity_id = ""
-            # № в блоке application-expanded
-            number_nodes = article.find_elements(
-                By.XPATH,
-                './/div[contains(@class,"application-expanded__item")]'
-                '[div[contains(@class,"application-label") and normalize-space()="№"]]'
-                '//div[contains(@class,"application-value")]',
-            )
-            if number_nodes:
-                entity_id = number_nodes[0].text.strip()
-            if not entity_id:
-                # fallback: class application-101389
-                classes = (article.get_attribute("class") or "").split()
-                for cls in classes:
-                    if cls.startswith("application-") and cls.replace("application-", "").isdigit():
-                        entity_id = cls.replace("application-", "")
-                        break
-
-            body_nodes = article.find_elements(By.CSS_SELECTOR, ".application__body")
-            building_nodes = article.find_elements(By.CSS_SELECTOR, ".application__field-building")
-            floor_nodes = article.find_elements(By.CSS_SELECTOR, ".application__field-floor")
-            place_nodes = article.find_elements(By.CSS_SELECTOR, ".application__field-place")
-            status_nodes = article.find_elements(By.CSS_SELECTOR, ".application-status")
-
-            body_value = body_nodes[0].text if body_nodes else ""
-            building_result = building_nodes[0].text if building_nodes else ""
-            floor_result = floor_nodes[0].text if floor_nodes else ""
-            field_place_value = place_nodes[0].text if place_nodes else ""
-
-            status_text = status_nodes[0].text.strip().lower() if status_nodes else ""
-            status_html = status_nodes[0].get_attribute("innerHTML") if status_nodes else ""
-            field_done_value = 1 if ("готово" in status_text or "status-done" in (status_html or "")) else 0
-
-            if not entity_id and not body_value:
-                continue
-
-            data.append(_build_task_record(
-                entity_id, body_value, building_result, floor_result, field_place_value, field_done_value
-            ))
-        except Exception:
-            continue
-    return data
-
-
-def parse_tasks_from_table(driver):
-    """Старая вёрстка: таблица с headers=view-*-table-column."""
+def parse_eam_table(driver, logger):
     entity_ids = driver.find_elements(By.XPATH, '//*[@headers="view-field-serial-table-column"]')
     body_values = driver.find_elements(By.XPATH, '//*[@headers="view-body-table-column"]')
     building_results = driver.find_elements(By.XPATH, '//*[@headers="view-field-building-table-column"]')
     floor_results = driver.find_elements(By.XPATH, '//*[@headers="view-field-floor-table-column"]')
-    place_results = driver.find_elements(By.XPATH, '//input[@data-drupal-selector="edit-field-place-0-value"]')
-    field_done_results = driver.find_elements(By.XPATH, '//input[@data-drupal-selector="edit-field-done-value"]')
 
-    min_length = min(len(body_values), len(building_results), len(place_results), len(entity_ids), len(floor_results))
+    # Place: раньше editable input, сейчас ячейка headers=view-field-place-table-column
+    place_results = driver.find_elements(By.XPATH, '//input[@data-drupal-selector="edit-field-place-0-value"]')
+    if not place_results:
+        place_results = driver.find_elements(By.XPATH, '//*[@headers="view-field-place-table-column"]')
+
+    # Done: раньше edit-field-done-value, сейчас колонка field_done_1
+    field_done_results = driver.find_elements(By.XPATH, '//input[@data-drupal-selector="edit-field-done-value"]')
+    if not field_done_results:
+        field_done_results = driver.find_elements(
+            By.XPATH,
+            '//input[contains(@data-drupal-selector,"edit-field-done")]'
+        )
+    if not field_done_results:
+        field_done_results = driver.find_elements(
+            By.XPATH,
+            '//*[@headers="view-field-done-1-table-column" or @headers="view-field-done-table-column"]'
+        )
+
+    lengths = {
+        "serial": len(entity_ids),
+        "body": len(body_values),
+        "building": len(building_results),
+        "floor": len(floor_results),
+        "place": len(place_results),
+        "done": len(field_done_results),
+    }
+    logger.info(f"EAM таблица: {lengths}")
+
+    min_length = min(len(entity_ids), len(body_values), len(building_results), len(floor_results))
     if min_length == 0:
         return []
 
     data = []
     for i in range(min_length):
-        field_done_value = 0
-        if i < len(field_done_results):
-            field_done_value = 1 if field_done_results[i].is_selected() else 0
+        field_place_value = _get_place_value(place_results[i]) if i < len(place_results) else ""
+        field_done_value = _get_done_value(field_done_results[i]) if i < len(field_done_results) else 0
 
-        data.append(_build_task_record(
-            entity_ids[i].text,
-            body_values[i].text,
-            building_results[i].text.strip().split("\n")[-1],
-            floor_results[i].text.strip().split("\n")[-1],
-            place_results[i].get_attribute("value") or "",
-            field_done_value,
-        ))
+        body_value = body_values[i].text.strip()
+        daily_time = calculate_next_occurrence(body_value)
+        if daily_time:
+            timestamp = datetime.now() + daily_time
+            daily_time = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            daily_time = None
+
+        data.append({
+            "entity_id": entity_ids[i].text.strip(),
+            "body_value": body_value,
+            "building_result": building_results[i].text.strip().split("\n")[-1],
+            "floor_result": floor_results[i].text.strip().split("\n")[-1],
+            "field_place_value": field_place_value,
+            "field_done_value": field_done_value,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "daily_time": daily_time,
+        })
     return data
 
 
-def parse_task_list(driver, logger):
-    """Сначала новая вёрстка (карточки), иначе старая таблица."""
-    data = parse_tasks_from_cards(driver)
-    if data:
-        logger.info(f"Парсинг карточек: найдено {len(data)} заявок.")
-        return data
+def check_task_list(logger):
+    driver = None
+    try:
+        options = Options()
+        options.binary_location = "/usr/bin/chromium-browser"  # Путь к Chromium
+        options.add_argument("--headless")  # Запуск без GUI
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        proxy = "gw.dataimpulse.com:823"
 
-    data = parse_tasks_from_table(driver)
-    if data:
-        logger.info(f"Парсинг таблицы (legacy): найдено {len(data)} заявок.")
-    else:
-        logger.info("Заявки не найдены ни в карточках, ни в таблице.")
-    return data
+        # options.add_argument(f"--proxy-server={proxy}")
+        service = Service("/usr/bin/chromedriver")  # Путь к ChromeDriver
+        driver = webdriver.Chrome(service=service, options=options)
+
+        logger.info('пытаюсь зайти на сайт')
+    
+        driver.get('https://engir.by/user/login')
+        logger.info('зашел на сайт')
+
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "edit-submit")))
+
+        email_field = driver.find_element(By.ID, 'edit-name')
+        email_field.send_keys('help@wbx.by')
+
+        password_field = driver.find_element(By.ID, 'edit-pass')
+        password_field.send_keys('4?Zm9y!U/c-2_6yv')
+
+        submit_button = driver.find_element(By.ID, 'edit-submit')
+        submit_button.click()
+
+        time.sleep(5)
+        # items_per_page=100 — на сайте по умолчанию сейчас 20
+        driver.get(
+            'https://engir.by/eam?building=&applicant=&realwork=&run_eam=All'
+            '&done_eam=All&created=&changed=&items_per_page=100'
+        )
+        logger.info('зашел в eam')
+        WebDriverWait(driver, 15).until(
+            EC.presence_of_element_located((By.XPATH, '//*[@headers="view-field-serial-table-column"]'))
+        )
+        time.sleep(2)
+
+        data = parse_eam_table(driver, logger)
+        logger.info(f"Распарсено заявок: {len(data)}")
+
+        # Загружаем старые данные
+        old_data = []
+        if os.path.exists("output.json"):
+            with open("output.json", "r", encoding="utf-8") as f:
+                old_data = json.load(f)
+
+        old_data_dict = {item["entity_id"]: item for item in old_data}
+        new_data_dict = {item["entity_id"]: item for item in data}
+
+        has_changes = False
+        new_entries = []
+
+        # Проверяем изменения
+        for entity_id, new_item in new_data_dict.items():
+            if entity_id not in old_data_dict:
+                # Новая заявка (отправляем в Telegram)
+                new_entries.append(new_item)
+                has_changes = True
+            else:
+                old_item = old_data_dict[entity_id]
+                if old_item["field_done_value"] != new_item["field_done_value"]:
+                    # Изменение field_done_value (не отправляем в Telegram)
+                    has_changes = True
+
+        # Если есть изменения, перезаписываем output.json
+        if has_changes:
+            with open("output.json", "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=4)
+            logger.info("Файл output.json обновлен.")
+
+        # Отправляем сообщения только для новых заявок
+        for item in new_entries:
+            msg = (
+                f"<b>Новая заявка на обслуживание! </b>\n"
+                f"<b>Описание: </b>{item['body_value']}\n"
+                f"<b>Место: </b>{item['field_place_value']}\n"
+                f"<b>Этаж: </b>{item['floor_result']}\n"
+                f"<b>Здание: </b>{item['building_result']}"
+            )
+            send_to_telegram(msg)
+
+        if new_entries:
+            logger.info(f"Добавлено {len(new_entries)} новых записей и отправлено в Telegram.")
+        else:
+            logger.info("Новых записей не обнаружено.")
+
+    except Exception as e:
+        logger.error(f"Ошибка: {e}")
+    finally:
+        if driver is not None:
+            driver.quit()
+        else:
+            logger.info("Драйвер не был инициализирован.")
 
 # def check_task_list(logger):
 #     try:
@@ -254,109 +320,6 @@ def parse_task_list(driver, logger):
 #             driver.quit()
 #         else:
 #             logger.info("Драйвер не был инициализирован.")
-
-
-
-
-
-
-def check_task_list(logger):
-    driver = None
-    try:
-        options = Options()
-        options.binary_location = "/usr/bin/chromium-browser"  # Путь к Chromium
-        options.add_argument("--headless")  # Запуск без GUI
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        proxy = "gw.dataimpulse.com:823"
-
-        # options.add_argument(f"--proxy-server={proxy}")
-        service = Service("/usr/bin/chromedriver")  # Путь к ChromeDriver
-        driver = webdriver.Chrome(service=service, options=options)
-
-        logger.info('пытаюсь зайти на сайт')
-    
-        driver.get('https://engir.by/user/login')
-        logger.info('зашел на сайт')
-
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "edit-submit")))
-
-        email_field = driver.find_element(By.ID, 'edit-name')
-        email_field.send_keys('help@wbx.by')
-
-        password_field = driver.find_element(By.ID, 'edit-pass')
-        password_field.send_keys('4?Zm9y!U/c-2_6yv')
-
-        submit_button = driver.find_element(By.ID, 'edit-submit')
-        submit_button.click()
-
-        time.sleep(5)
-        driver.get('https://engir.by/eam')
-        logger.info('зашел в eam')
-        time.sleep(5)
-
-        data = parse_task_list(driver, logger)
-
-        # Загружаем старые данные
-        old_data = []
-        if os.path.exists("output.json"):
-            with open("output.json", "r", encoding="utf-8") as f:
-                old_data = json.load(f)
-
-        old_data_dict = {item["entity_id"]: item for item in old_data}
-        # Совместимость при смене id (5174 -> 101363): не слать повторно по содержимому
-        old_fingerprints = {_item_fingerprint(item) for item in old_data}
-        new_data_dict = {item["entity_id"]: item for item in data}
-
-        has_changes = False
-        new_entries = []
-
-        # Проверяем изменения
-        for entity_id, new_item in new_data_dict.items():
-            if entity_id not in old_data_dict:
-                if _item_fingerprint(new_item) in old_fingerprints:
-                    # Та же заявка с новым entity_id — обновляем файл, в Telegram не шлём
-                    has_changes = True
-                else:
-                    new_entries.append(new_item)
-                    has_changes = True
-            else:
-                old_item = old_data_dict[entity_id]
-                if old_item["field_done_value"] != new_item["field_done_value"]:
-                    # Изменение field_done_value (не отправляем в Telegram)
-                    has_changes = True
-                elif _item_fingerprint(old_item) != _item_fingerprint(new_item):
-                    has_changes = True
-
-        # Если есть изменения, перезаписываем output.json
-        if has_changes:
-            with open("output.json", "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=4)
-            logger.info("Файл output.json обновлен.")
-
-        # Отправляем сообщения только для новых заявок
-        for item in new_entries:
-            msg = (
-                f"<b>Новая заявка на обслуживание! </b>\n"
-                f"<b>Описание: </b>{item['body_value']}\n"
-                f"<b>Место: </b>{item['field_place_value']}\n"
-                f"<b>Этаж: </b>{item['floor_result']}\n"
-                f"<b>Здание: </b>{item['building_result']}"
-            )
-            send_to_telegram(msg)
-
-        if new_entries:
-            logger.info(f"Добавлено {len(new_entries)} новых записей и отправлено в Telegram.")
-        else:
-            logger.info("Новых записей не обнаружено.")
-
-    except Exception as e:
-        logger.error(f"Ошибка: {e}")
-    finally:
-        if driver is not None:
-            driver.quit()
-        else:
-            logger.info("Драйвер не был инициализирован.")
 
 
 
