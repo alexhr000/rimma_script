@@ -81,7 +81,6 @@ def create_chrome_driver():
     if not chromedriver and os.path.exists("/usr/bin/chromedriver"):
         chromedriver = "/usr/bin/chromedriver"
 
-    # На Windows/без явного chromedriver Selenium Manager подтянет драйвер сам
     if chromedriver:
         service = Service(chromedriver)
         driver = webdriver.Chrome(service=service, options=options)
@@ -96,10 +95,77 @@ def create_chrome_driver():
 def _is_logged_in(driver):
     if driver.find_elements(By.CSS_SELECTOR, 'a[href*="/user/logout"]'):
         return True
+    url = (driver.current_url or "").lower()
+    if "/user/" in url and "/user/login" not in url and "/user/password" not in url:
+        return True
     body = (driver.find_element(By.TAG_NAME, "body").text or "").lower()
     if "выйти" in body or "log out" in body:
         return True
     return False
+
+
+def _unlock_antibot(driver, logger):
+    """Снимает Drupal Antibot и остатки в кэше после удаления модуля."""
+    info = driver.execute_script("""
+      const form = document.getElementById('user-login-form');
+      if (!form) return {found: false};
+
+      const before = form.getAttribute('action') || '';
+      let after = before;
+      let keySet = false;
+      let source = 'none';
+      const keyInput = form.querySelector('[name="antibot_key"]');
+
+      try {
+        const forms = (window.drupalSettings && drupalSettings.antibot && drupalSettings.antibot.forms) || {};
+        const conf = forms['user-login-form'] || forms[form.getAttribute('id')] || null;
+        if (conf) {
+          if (conf.action) {
+            form.setAttribute('action', conf.action);
+            after = conf.action;
+            source = 'drupalSettings';
+          }
+          if (keyInput && conf.key) {
+            keyInput.value = conf.key;
+            keySet = true;
+          }
+        }
+      } catch (e) {}
+
+      if ((after || '').toLowerCase().indexOf('antibot') !== -1) {
+        const dataAction = form.getAttribute('data-action')
+          || form.getAttribute('data-antibot-action');
+        if (dataAction) {
+          form.setAttribute('action', dataAction);
+          after = dataAction;
+          source = source === 'none' ? 'data-action' : source + '+data-action';
+        } else {
+          form.setAttribute('action', '/user/login');
+          after = '/user/login';
+          source = source === 'none' ? 'force-/user/login' : source + '+force';
+        }
+      }
+
+      if (keyInput && !keyInput.value) {
+        keyInput.value = 'unlocked';
+        keySet = true;
+      }
+
+      form.classList.remove('antibot');
+      form.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}));
+      form.dispatchEvent(new Event('touchstart', {bubbles: true}));
+
+      return {
+        found: true,
+        before: before,
+        after: after,
+        keySet: keySet,
+        source: source,
+        hasAntibotKey: !!keyInput
+      };
+    """)
+    logger.info(f"antibot unlock: {info}")
+    return info
 
 
 def login(driver, logger):
@@ -111,16 +177,6 @@ def login(driver, logger):
     driver.get(login_url)
     WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.ID, "edit-submit")))
 
-    # Drupal Antibot: пока JS не отработал, action=/antibot и ключ пустой
-    try:
-        WebDriverWait(driver, 10).until(
-            lambda d: "antibot" not in (
-                (d.find_element(By.ID, "user-login-form").get_attribute("action") or "").lower()
-            )
-        )
-    except Exception:
-        logger.warning("Antibot action не сменился вовремя — пробуем логин всё равно")
-
     email_field = driver.find_element(By.ID, "edit-name")
     password_field = driver.find_element(By.ID, "edit-pass")
     email_field.send_keys(Keys.CONTROL, "a")
@@ -130,7 +186,8 @@ def login(driver, logger):
     email_field.send_keys(config["login"])
     password_field.send_keys(config["password"])
 
-    # Только обычный click: JS-click / form.submit() ломают Antibot
+    _unlock_antibot(driver, logger)
+
     driver.find_element(By.ID, "edit-submit").click()
 
     def login_finished(d):
@@ -151,14 +208,20 @@ def login(driver, logger):
         By.CSS_SELECTOR, ".messages--error, .messages--status, .alert-danger, .messages"
     )
     error_text = " | ".join(e.text.strip() for e in error_nodes if e.text.strip())
+    logger.info(f"после submit: url={time_url}, title={title!r}, messages={error_text!r}")
 
-    if error_text and ("ошиб" in error_text.lower() or "неверн" in error_text.lower() or "invalid" in error_text.lower()):
+    if error_text and (
+        "ошиб" in error_text.lower()
+        or "неверн" in error_text.lower()
+        or "invalid" in error_text.lower()
+    ):
         raise RuntimeError(f"Ошибка логина: {error_text}")
     if "/user/login" in time_url and not _is_logged_in(driver):
         hint = f" Сообщение сайта: {error_text}" if error_text else ""
         raise RuntimeError(
             f"Логин не выполнен, остались на {time_url}, title={title!r}.{hint} "
-            "Проверь LOGIN/PASSWORD в .env в браузере на том же SITE."
+            "После удаления Antibot очисти кэш Drupal: "
+            "/admin/config/development/performance → Clear all caches"
         )
     if "запрещ" in title.lower() or "access denied" in title.lower():
         raise RuntimeError(f"После логина доступ запрещён: url={time_url}, title={title!r}")
@@ -169,7 +232,7 @@ def login(driver, logger):
     if not _is_logged_in(driver) and "/user/login" in time_url:
         raise RuntimeError(
             f"Сессия не создана после логина (url={time_url}, title={title!r}). "
-            f"Проверь LOGIN/PASSWORD в .env."
+            f"Проверь LOGIN/PASSWORD в .env и кэш Drupal."
         )
 
     logger.info(f"логин успешен: url={time_url}, title={title!r}, logged_in={_is_logged_in(driver)}")

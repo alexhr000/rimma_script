@@ -174,3 +174,6 @@ test.py
 
 output.json
 .vscode
+output.json
+changed_data.json
+sent_messages.json
