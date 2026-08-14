@@ -57,29 +57,54 @@ def _get_done_value(done_el):
     return 0
 
 
-def parse_eam_table(driver, logger):
-    entity_ids = driver.find_elements(By.XPATH, '//*[@headers="view-field-serial-table-column"]')
-    body_values = driver.find_elements(By.XPATH, '//*[@headers="view-body-table-column"]')
-    building_results = driver.find_elements(By.XPATH, '//*[@headers="view-field-building-table-column"]')
-    floor_results = driver.find_elements(By.XPATH, '//*[@headers="view-field-floor-table-column"]')
+def _find_first(driver, selectors):
+    """Вернуть первый непустой список элементов по списку (By, selector)."""
+    for by, selector in selectors:
+        elements = driver.find_elements(by, selector)
+        if elements:
+            return elements
+    return []
 
-    # Place: раньше editable input, сейчас ячейка headers=view-field-place-table-column
-    place_results = driver.find_elements(By.XPATH, '//input[@data-drupal-selector="edit-field-place-0-value"]')
-    if not place_results:
-        place_results = driver.find_elements(By.XPATH, '//*[@headers="view-field-place-table-column"]')
+
+def parse_eam_table(driver, logger):
+    # headers=... (старый Drupal) или class views-field-* в tbody (актуальная таблица)
+    entity_ids = _find_first(driver, [
+        (By.XPATH, '//tbody//*[@headers="view-field-serial-table-column"]'),
+        (By.XPATH, '//*[@headers="view-field-serial-table-column"]'),
+        (By.CSS_SELECTOR, 'table tbody td.views-field-field-serial'),
+    ])
+    body_values = _find_first(driver, [
+        (By.XPATH, '//tbody//*[@headers="view-body-table-column"]'),
+        (By.XPATH, '//*[@headers="view-body-table-column"]'),
+        (By.CSS_SELECTOR, 'table tbody td.views-field-body'),
+    ])
+    building_results = _find_first(driver, [
+        (By.XPATH, '//tbody//*[@headers="view-field-building-table-column"]'),
+        (By.XPATH, '//*[@headers="view-field-building-table-column"]'),
+        (By.CSS_SELECTOR, 'table tbody td.views-field-field-building'),
+    ])
+    floor_results = _find_first(driver, [
+        (By.XPATH, '//tbody//*[@headers="view-field-floor-table-column"]'),
+        (By.XPATH, '//*[@headers="view-field-floor-table-column"]'),
+        (By.CSS_SELECTOR, 'table tbody td.views-field-field-floor'),
+    ])
+
+    # Place: раньше editable input, сейчас ячейка таблицы
+    place_results = _find_first(driver, [
+        (By.XPATH, '//input[@data-drupal-selector="edit-field-place-0-value"]'),
+        (By.XPATH, '//tbody//*[@headers="view-field-place-table-column"]'),
+        (By.XPATH, '//*[@headers="view-field-place-table-column"]'),
+        (By.CSS_SELECTOR, 'table tbody td.views-field-field-place'),
+    ])
 
     # Done: раньше edit-field-done-value, сейчас колонка field_done_1
-    field_done_results = driver.find_elements(By.XPATH, '//input[@data-drupal-selector="edit-field-done-value"]')
-    if not field_done_results:
-        field_done_results = driver.find_elements(
-            By.XPATH,
-            '//input[contains(@data-drupal-selector,"edit-field-done")]'
-        )
-    if not field_done_results:
-        field_done_results = driver.find_elements(
-            By.XPATH,
-            '//*[@headers="view-field-done-1-table-column" or @headers="view-field-done-table-column"]'
-        )
+    field_done_results = _find_first(driver, [
+        (By.XPATH, '//input[@data-drupal-selector="edit-field-done-value"]'),
+        (By.XPATH, '//input[contains(@data-drupal-selector,"edit-field-done")]'),
+        (By.XPATH, '//tbody//*[@headers="view-field-done-1-table-column" or @headers="view-field-done-table-column"]'),
+        (By.XPATH, '//*[@headers="view-field-done-1-table-column" or @headers="view-field-done-table-column"]'),
+        (By.CSS_SELECTOR, 'table tbody td.views-field-field-done-1, table tbody td.views-field-field-done'),
+    ])
 
     lengths = {
         "serial": len(entity_ids),
@@ -129,6 +154,7 @@ def check_task_list(logger):
         options.add_argument("--headless")  # Запуск без GUI
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--window-size=1920,1080")
         proxy = "gw.dataimpulse.com:823"
 
         # options.add_argument(f"--proxy-server={proxy}")
@@ -153,18 +179,42 @@ def check_task_list(logger):
 
         time.sleep(5)
         # items_per_page=100 — на сайте по умолчанию сейчас 20
-        driver.get(
+        eam_url = (
             'https://engir.by/eam?building=&applicant=&realwork=&run_eam=All'
             '&done_eam=All&created=&changed=&items_per_page=100'
         )
-        logger.info('зашел в eam')
-        WebDriverWait(driver, 15).until(
-            EC.presence_of_element_located((By.XPATH, '//*[@headers="view-field-serial-table-column"]'))
-        )
+        driver.get(eam_url)
+        logger.info(f'зашел в eam ({driver.current_url})')
+
+        try:
+            WebDriverWait(driver, 20).until(
+                lambda d: (
+                    d.find_elements(By.CSS_SELECTOR, 'table tbody td.views-field-field-serial')
+                    or d.find_elements(By.XPATH, '//*[@headers="view-field-serial-table-column"]')
+                    or d.find_elements(By.CSS_SELECTOR, 'table.cols-28 tbody tr')
+                    or d.find_elements(By.CSS_SELECTOR, 'table.table-bordered tbody tr')
+                )
+            )
+        except Exception:
+            # fallback на простой /eam
+            logger.warning(
+                f"Таблица не появилась на фильтрованном URL "
+                f"(url={driver.current_url}, title={driver.title!r}), пробую /eam"
+            )
+            driver.get('https://engir.by/eam')
+            time.sleep(5)
+            logger.info(f'повторный вход в eam ({driver.current_url}, title={driver.title!r})')
+
         time.sleep(2)
 
         data = parse_eam_table(driver, logger)
         logger.info(f"Распарсено заявок: {len(data)}")
+        if not data:
+            logger.warning(
+                f"Пустой парсинг. url={driver.current_url}, title={driver.title!r}, "
+                f"tables={len(driver.find_elements(By.TAG_NAME, 'table'))}, "
+                f"has_login_form={bool(driver.find_elements(By.ID, 'edit-name'))}"
+            )
 
         # Загружаем старые данные
         old_data = []
